@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="WorkoutAnalyzerGUI-jvm-1.0-SNAPSHOT">
+    <output-path>$PROJECT_DIR$/build/libs</output-path>
+    <root id="archive" name="WorkoutAnalyzerGUI-jvm-1.0-SNAPSHOT.jar">
+      <element id="module-output" name="WorkoutAnalyzerGUI.jvmMain" />
+    </root>
+  </artifact>
+</component>
