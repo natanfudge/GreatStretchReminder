@@ -1,12 +1,24 @@
 package util
 
-import androidx.compose.runtime.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowScope
 import androidx.compose.ui.window.WindowState
 import kotlin.system.exitProcess
 
@@ -34,7 +46,8 @@ class WindowManager private constructor(private val initialWindows: List<Configu
         context(ApplicationScope)
         @Composable
         fun display(initialWindow: WindowComponent, initialConfig: WindowConfig) {
-            val manager = remember { WindowManager(listOf(ConfiguredWindow(initialWindow, initialConfig))) }
+            val manager =
+                remember { WindowManager(listOf(ConfiguredWindow(initialWindow, initialConfig))) }
             CompositionLocalProvider(LocalWindowManager provides manager) {
                 manager.showWindows()
             }
@@ -74,10 +87,16 @@ class WindowManager private constructor(private val initialWindows: List<Configu
         )
 
         for ((window, config) in activeWindows) {
+            val onCloseRequest = {
+                if (config.onCloseRequest == null) hide(window)
+                else config.onCloseRequest.invoke(this@ApplicationScope)
+            }
             Window(
                 visible = config.visible,
-                undecorated = config.undecorated,
-                transparent = config.transparent,
+//                undecorated = config.undecorated,
+//                transparent = config.transparent,
+                transparent = true,
+                undecorated = true,
                 alwaysOnTop = config.alwaysOnTop,
                 enabled = config.enabled,
                 focusable = config.focusable,
@@ -85,21 +104,58 @@ class WindowManager private constructor(private val initialWindows: List<Configu
                 onKeyEvent = config.onKeyEvent,
                 state = config.state,
                 title = config.title,
-                content = { window.content() },
+                content = {
+                    WithDecoration(config.undecorated, onCloseRequest) {
+                        WithBackground(config.transparent) {
+                            window.content()
+                        }
+                    }
+                },
                 onPreviewKeyEvent = config.onPreviewKeyEvent,
-                onCloseRequest = {
-                    if (config.onCloseRequest == null) hide(window)
-                    else config.onCloseRequest.invoke(this@ApplicationScope)
-                }
+                onCloseRequest = onCloseRequest
             )
+        }
+    }
+}
+
+context(WindowScope)
+@Composable
+private fun WithDecoration(
+    undecorated: Boolean,
+    onCloseRequest: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    if (undecorated) {
+        content()
+    } else {
+        WithTitleBar(onCloseRequest) {
+            content()
+        }
+    }
+}
+
+context(WindowScope)
+@Composable
+private fun WithBackground(transparent: Boolean, content: WindowContent) {
+    if (transparent) {
+        Box {
+            content(this)
+        }
+
+    } else {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colors.background)) {
+            content(this)
         }
     }
 }
 
 val LocalWindowManager = compositionLocalOf<WindowManager> { error("Window Manager not found") }
 
+typealias WindowContent =  @Composable context(BoxScope)() -> Unit
+
 
 interface WindowComponent {
+    context(BoxScope)
     @Composable
     fun content()
 }
