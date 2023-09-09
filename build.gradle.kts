@@ -33,6 +33,8 @@ kotlin {
                 implementation(compose.desktop.currentOs)
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0-RC")
                 implementation("io.github.koalaplot:koalaplot-core:0.1.0")
+                implementation("net.java.dev.jna:jna:5.13.0")
+                implementation("net.java.dev.jna:jna-platform:5.13.0")
             }
         }
         val jvmTest by getting {

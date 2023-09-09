@@ -1,13 +1,12 @@
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FloatTweenSpec
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedButton
-import androidx.compose.material.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
@@ -51,23 +50,33 @@ object StretchReminder : WindowComponent {
     }
 }
 
-context(BoxScope, DialogWindowScope)
+private const val breakSeconds = 60
+context(WindowScope)
 @Composable
 private fun StretchDialog() {
     val window = LocalWindowManager.current
     WithTitleBar(onCloseRequest = { window.hide(StretchReminder) }, "Great Stretch Reminder") {
         Box(Modifier.fillMaxSize().background(MaterialTheme.colors.background)) {
             Column(Modifier.padding(5.dp).align(Alignment.Center)) {
+                val progress = remember {Animatable(0f) }
+                LaunchedEffect(Unit) {
+                    progress.animateTo(1f, animationSpec = FloatTweenSpec(duration = breakSeconds * 10_000, easing = LinearEasing))
+                    window.hide(StretchReminder)
+                }
                 Text(
                     "This is a reminder to go pet a cat",
-                    color = MaterialTheme.colors.onBackground
                 )
-                OutlinedButton(
-                    onClick = { window.hide(StretchReminder) },
-                    Modifier.align(Alignment.CenterHorizontally)
-                ) {
-                    Text("Close")
+                LinearProgressIndicator(progress.value, Modifier.fillMaxWidth().padding(vertical = 10.dp).height(30.dp))
+                Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    val secondsRemaining = (1 - progress.value) * breakSeconds
+                    Text("Time remaining: ${formatSeconds(secondsRemaining.toInt())}")
+                    OutlinedButton(
+                        onClick = { window.hide(StretchReminder) },
+                    ) {
+                        Text("Close")
+                    }
                 }
+
             }
         }
     }

@@ -36,6 +36,11 @@ class Countdown private constructor(private var intervalSeconds: Int, private va
         }
     }
 
+    fun reset() {
+        secondsLeft = intervalSeconds
+    }
+
+
     fun end() {
         secondsLeft = intervalSeconds
         callback()

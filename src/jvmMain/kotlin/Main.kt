@@ -1,5 +1,5 @@
+import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.material.darkColors
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -7,27 +7,38 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.application
+import com.sun.jna.platform.win32.Kernel32
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import util.Countdown
-import util.WindowConfig
 import util.WindowManager
+import util.os.Os
+import util.os.User32
+import util.os.User32.LASTINPUTINFO
 import java.awt.GraphicsEnvironment
 import kotlin.system.exitProcess
 
-//class WindowController : WindowState by WindowState() {
-//    var alwaysOnTop by mutableStateOf(false)
-//    var show = true
-//
-////    var decorated by mutableStateOf(true)
-////    var transparent by mutableStateOf(false)
-//
-//}
-
-
-// see https://stackoverflow.com/questions/71993178/unable-to-bring-window-to-foreground-with-compose-desktop
 
 class App(private val window: WindowManager) {
-    private val countdown = Countdown.start(intervalSeconds = 60 * 30) {
-        StretchReminder.show(window)
+    private val interval = 60 * 30
+    private val idleTime = 60 * 1000L
+
+    private val countdown = Countdown.start(intervalSeconds = interval) {
+        if (!Os.anyAreRunning(listOf("dota2.exe"))) {
+            StretchReminder.show(window)
+        }
+    }
+
+    init {
+        GlobalScope.launch {
+            while (true) {
+                delay(idleTime)
+                if (System.currentTimeMillis() - Os.lastActiveTimeMs() > idleTime) {
+                    countdown.reset()
+                }
+            }
+        }
     }
 
     val secondsTillNextReminder get() = countdown.secondsLeft
@@ -39,13 +50,38 @@ class App(private val window: WindowManager) {
 
 val LocalApp = staticCompositionLocalOf<App> { error("No App") }
 
-private fun formatSeconds(seconds: Int): String {
+fun formatSeconds(seconds: Int): String {
     return if (seconds < 60) "${seconds}s" else "${seconds / 60}m ${seconds % 60}s"
 }
 
 
 fun main() {
-    val manager = WindowManager.create(MainWindow, WindowConfig()) {
+//    val lii = LASTINPUTINFO()
+//    val result = IntByReference()
+
+//    while (true) {
+//        val lii = LASTINPUTINFO()
+//
+//        if (User32.INSTANCE.GetLastInputInfo(lii)) {
+//            val lastInputTime = lii.dwTime
+//            println("Last Input Time (milliseconds): $lastInputTime")
+//        } else {
+//            val errorCode: Int = Kernel32.INSTANCE.GetLastError()
+//            System.err.println("GetLastInputInfo failed.")
+//            System.err.println("Error Code: $errorCode")
+//        }
+//        Thread.sleep(1000)
+//    }
+
+
+//    if (User32.Instance.GetLastInputInfo(lii.pointer)) {
+//        println("Last Input Time: " + lii + " milliseconds")
+//    } else {
+////        Marshal
+//
+//    }
+    val manager = WindowManager.create(MainWindow, MainWindow.DefaultConfig) {
+//    val manager = WindowManager.create(StretchReminder, WindowConfig()) {
         val app = LocalApp.current
         Tray(
             icon = painterResource("icon.png"),
@@ -64,8 +100,8 @@ fun main() {
     }
     val app = App(manager)
     application {
-        CompositionLocalProvider(LocalApp provides app) {
-            MaterialTheme(colors = darkColors) {
+        MaterialTheme(colors = darkColors) {
+            CompositionLocalProvider(LocalApp provides app, LocalContentColor provides MaterialTheme.colors.onBackground) {
                 WindowManager.display(manager)
             }
         }
@@ -87,9 +123,6 @@ fun getTotalScreenWidth(): Int {
 
 //TODO: features:
 // First release /////////////
-// 4. Loading bar for break
-// 5. Ban reminder when certain apps are open
-// 6. Reset time left when away from computer
 // 7. Play tuturu on break
 
 //TODO: Second Release
@@ -98,6 +131,9 @@ fun getTotalScreenWidth(): Int {
 // 2. Config: break interval
 // 3. Config: break duration
 // 4. Config: break sound
+// 5. Config: banned apps
+// 6. Decrease break interval in times of high usage
+// 7. config: formula for point 6
 
 // Get an array of graphics devices GraphicsDevice [] gs = ; // Loop through each device and print its size for (GraphicsDevice gd : gs) { // Get the display mode of the device DisplayMode dm = gd.getDisplayMode (); // Get the width and height of the device in pixels int width = dm.getWidth (); int height = dm.getHeight (); // Print the size System.out.println ("Monitor size: " + width + " x " + height); }}
 
