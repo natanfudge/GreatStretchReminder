@@ -41,17 +41,29 @@ data class WindowConfig(
 
 private data class ConfiguredWindow(val window: WindowComponent, val config: WindowConfig)
 
-class WindowManager private constructor(private val initialWindows: List<ConfiguredWindow>) {
+typealias TrayFunc = @Composable context(ApplicationScope, WindowManager) () -> Unit
+
+class WindowManager private constructor(private val initialWindows: List<ConfiguredWindow>, private val tray:  TrayFunc) {
     companion object {
+        fun create(initialWindow: WindowComponent, initialConfig: WindowConfig, tray: TrayFunc): WindowManager {
+            return WindowManager(listOf(ConfiguredWindow(initialWindow, initialConfig)), tray)
+        }
         context(ApplicationScope)
         @Composable
-        fun display(initialWindow: WindowComponent, initialConfig: WindowConfig) {
-            val manager =
-                remember { WindowManager(listOf(ConfiguredWindow(initialWindow, initialConfig))) }
+        fun display(manager: WindowManager) {
             CompositionLocalProvider(LocalWindowManager provides manager) {
                 manager.showWindows()
             }
         }
+//
+//
+//        @Composable
+//        fun display(initialWindow: WindowComponent, initialConfig: WindowConfig): WindowManager {
+//            val manager =
+//                remember { WindowManager(listOf(ConfiguredWindow(initialWindow, initialConfig))) }
+//
+//            return manager
+//        }
     }
 
     private val activeWindows = mutableStateListOf(*initialWindows.toTypedArray())
@@ -73,18 +85,7 @@ class WindowManager private constructor(private val initialWindows: List<Configu
     context(ApplicationScope)
     @Composable
     private fun showWindows() {
-        Tray(
-            icon = painterResource("icon.png"),
-            menu = {
-                Item(
-                    "Exit",
-                    onClick = { exitProcess(1) }
-                )
-            },
-            onAction = {
-                show(initialWindows)
-            }
-        )
+        tray(this@ApplicationScope, this@WindowManager)
 
         for ((window, config) in activeWindows) {
             val onCloseRequest = {

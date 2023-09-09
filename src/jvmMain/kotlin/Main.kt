@@ -1,24 +1,17 @@
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.darkColors
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.WindowPosition
-import androidx.compose.ui.window.WindowState
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.application
-import util.LocalWindowManager
-import util.WindowComponent
+import util.Countdown
 import util.WindowConfig
 import util.WindowManager
 import java.awt.GraphicsEnvironment
-import java.awt.Toolkit
+import kotlin.system.exitProcess
 
 //class WindowController : WindowState by WindowState() {
 //    var alwaysOnTop by mutableStateOf(false)
@@ -32,44 +25,49 @@ import java.awt.Toolkit
 
 // see https://stackoverflow.com/questions/71993178/unable-to-bring-window-to-foreground-with-compose-desktop
 
-object MainWindow : WindowComponent {
-    context(BoxScope)
-    @Composable
-    override fun content() {
-        val window = LocalWindowManager.current
-        LaunchedEffect(Unit) {
-            while(true) {
-                //TODO: write an  interatacble timer
-            }
-        }
-        Button(onClick = {
-            val screenSize = Toolkit.getDefaultToolkit().screenSize
-            window.show(
-                StretchReminder, WindowConfig(
-                    undecorated = true,
-                    transparent = true,
-                    state = WindowState(
-                        size = DpSize(
-                            (getTotalScreenWidth()).dp,
-                            // Bugs out without + 1
-                            (screenSize.height + 1).dp
-                        ),
-                        position = WindowPosition.Absolute(0.dp, 0.dp)
-                    )
-                )
-            )
-        }, Modifier.align(Alignment.Center)) {
-            Text("Show example")
-        }
+class App(private val window: WindowManager) {
+    private val countdown = Countdown.start(intervalSeconds = 60 * 30) {
+        StretchReminder.show(window)
     }
 
+    val secondsTillNextReminder get() = countdown.secondsLeft
+
+    fun startBreakNow() {
+        countdown.end()
+    }
+}
+
+val LocalApp = staticCompositionLocalOf<App> { error("No App") }
+
+private fun formatSeconds(seconds: Int): String {
+    return if (seconds < 60) "${seconds}s" else "${seconds / 60}m ${seconds % 60}s"
 }
 
 
 fun main() {
+    val manager = WindowManager.create(MainWindow, WindowConfig()) {
+        val app = LocalApp.current
+        Tray(
+            icon = painterResource("icon.png"),
+            menu = {
+                Item("Start break now", onClick = { app.startBreakNow() })
+                Item(
+                    "Exit",
+                    onClick = { exitProcess(1) }
+                )
+            },
+            onAction = {
+                MainWindow.show()
+            },
+            tooltip = "Next break in: ${formatSeconds(app.secondsTillNextReminder)}"
+        )
+    }
+    val app = App(manager)
     application {
-        MaterialTheme(colors = darkColors) {
-            WindowManager.display(MainWindow, WindowConfig())
+        CompositionLocalProvider(LocalApp provides app) {
+            MaterialTheme(colors = darkColors) {
+                WindowManager.display(manager)
+            }
         }
     }
 }
@@ -89,15 +87,13 @@ fun getTotalScreenWidth(): Int {
 
 //TODO: features:
 // First release /////////////
-// 1. Display main screen initially with config options
-// 2. 'Start break now' in main screen
-// 3. Start break every 30 minutes
 // 4. Loading bar for break
 // 5. Ban reminder when certain apps are open
 // 6. Reset time left when away from computer
 // 7. Play tuturu on break
 
 //TODO: Second Release
+// 0. Require solving a puzzle to stop reminder
 // 1. Many auto-generated inspirational quotes
 // 2. Config: break interval
 // 3. Config: break duration

@@ -12,14 +12,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogState
-import androidx.compose.ui.window.DialogWindowScope
-import util.LocalWindowManager
-import util.WindowComponent
-import util.WithTitleBar
+import androidx.compose.ui.window.*
+import util.*
+import java.awt.Toolkit
 
 object StretchReminder : WindowComponent {
+    fun show(window: WindowManager) {
+        val screenSize = Toolkit.getDefaultToolkit().screenSize
+        window.show(
+            StretchReminder, WindowConfig(
+                undecorated = true,
+                transparent = true,
+                state = WindowState(
+                    size = DpSize(
+                        (getTotalScreenWidth()).dp,
+                        // Bugs out without + 1
+                        (screenSize.height + 1).dp
+                    ),
+                    position = WindowPosition.Absolute(0.dp, 0.dp)
+                )
+            )
+        )
+    }
     context(BoxScope)
     @Composable
     override fun content() {

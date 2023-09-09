@@ -1,13 +1,35 @@
-
-import model.importWorkouts
-import java.nio.file.Paths
+import kotlinx.coroutines.*
+import java.util.concurrent.CancellationException
 import kotlin.test.Test
 
-class TestParse  {
+class TestParse {
     @Test
     fun testParse() {
-        val workouts = importWorkouts(Paths.get("Keep"))
-        val x = 2
+        val scope = CoroutineScope(Dispatchers.IO)
+
+        scope.launch {
+
+            delay(500)
+            println("Cancelling...")
+
+            scope.launch {
+//                try {
+                    delay(3000)
+                    println("Got to the end")
+//                } catch (e: CancellationException) {
+                    println("Caught cancellation")
+                    scope.launch {
+                        delay(500)
+                        println("Halo second time")
+                    }
+                }
+//            }
+            scope.cancel("foo")
+        }
+
+        runBlocking {
+            delay(4000)
+        }
     }
 
     @Test
