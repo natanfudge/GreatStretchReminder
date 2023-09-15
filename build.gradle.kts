@@ -35,6 +35,8 @@ kotlin {
                 implementation("io.github.koalaplot:koalaplot-core:0.1.0")
                 implementation("net.java.dev.jna:jna:5.13.0")
                 implementation("net.java.dev.jna:jna-platform:5.13.0")
+                implementation("io.coil-kt:coil-compose:2.4.0")
+                implementation("io.github.succlz123:compose-imageloader-desktop:0.0.2")
             }
         }
         val jvmTest by getting {

@@ -56,32 +56,7 @@ fun formatSeconds(seconds: Int): String {
 
 
 fun main() {
-//    val lii = LASTINPUTINFO()
-//    val result = IntByReference()
-
-//    while (true) {
-//        val lii = LASTINPUTINFO()
-//
-//        if (User32.INSTANCE.GetLastInputInfo(lii)) {
-//            val lastInputTime = lii.dwTime
-//            println("Last Input Time (milliseconds): $lastInputTime")
-//        } else {
-//            val errorCode: Int = Kernel32.INSTANCE.GetLastError()
-//            System.err.println("GetLastInputInfo failed.")
-//            System.err.println("Error Code: $errorCode")
-//        }
-//        Thread.sleep(1000)
-//    }
-
-
-//    if (User32.Instance.GetLastInputInfo(lii.pointer)) {
-//        println("Last Input Time: " + lii + " milliseconds")
-//    } else {
-////        Marshal
-//
-//    }
     val manager = WindowManager.create(MainWindow, MainWindow.DefaultConfig) {
-//    val manager = WindowManager.create(StretchReminder, WindowConfig()) {
         val app = LocalApp.current
         Tray(
             icon = painterResource("icon.png"),
@@ -122,18 +97,19 @@ fun getTotalScreenWidth(): Int {
 
 
 //TODO: features:
-// First release /////////////
-// 7. Play tuturu on break
 
 //TODO: Second Release
-// 0. Require solving a puzzle to stop reminder
-// 1. Many auto-generated inspirational quotes
+// 1. Many auto-generated inspirational quotes https://zenquotes.io/api/random
+// 2. Decrease break interval in times of high usage
+
+//TODO: Third Release:
 // 2. Config: break interval
 // 3. Config: break duration
 // 4. Config: break sound
 // 5. Config: banned apps
-// 6. Decrease break interval in times of high usage
 // 7. config: formula for point 6
+// 8. Config: sound volume
+// 9. Make packaging as MSI work (I think proguard is taking too much stuff)
 
 // Get an array of graphics devices GraphicsDevice [] gs = ; // Loop through each device and print its size for (GraphicsDevice gd : gs) { // Get the display mode of the device DisplayMode dm = gd.getDisplayMode (); // Get the width and height of the device in pixels int width = dm.getWidth (); int height = dm.getHeight (); // Print the size System.out.println ("Monitor size: " + width + " x " + height); }}
 

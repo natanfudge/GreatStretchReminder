@@ -1,0 +1,1 @@
+java -jar C:\Users\natan\Desktop\GreatStretchReminder\build\compose\jars\WorkoutAnalyzerGUI-windows-x64-1.0.0.jar
