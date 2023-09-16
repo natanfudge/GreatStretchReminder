@@ -9,18 +9,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.key.KeyEvent
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.window.ApplicationScope
-import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowScope
 import androidx.compose.ui.window.WindowState
-import kotlin.system.exitProcess
+import kotlin.reflect.KClass
 
 
 data class WindowConfig(
@@ -43,11 +39,12 @@ private data class ConfiguredWindow(val window: WindowComponent, val config: Win
 
 typealias TrayFunc = @Composable context(ApplicationScope, WindowManager) () -> Unit
 
-class WindowManager private constructor(private val initialWindows: List<ConfiguredWindow>, private val tray:  TrayFunc) {
+class WindowManager private constructor(initialWindows: List<ConfiguredWindow>, private val tray: TrayFunc) {
     companion object {
         fun create(initialWindow: WindowComponent, initialConfig: WindowConfig, tray: TrayFunc): WindowManager {
             return WindowManager(listOf(ConfiguredWindow(initialWindow, initialConfig)), tray)
         }
+
         context(ApplicationScope)
         @Composable
         fun display(manager: WindowManager) {
@@ -55,31 +52,29 @@ class WindowManager private constructor(private val initialWindows: List<Configu
                 manager.showWindows()
             }
         }
-//
-//
-//        @Composable
-//        fun display(initialWindow: WindowComponent, initialConfig: WindowConfig): WindowManager {
-//            val manager =
-//                remember { WindowManager(listOf(ConfiguredWindow(initialWindow, initialConfig))) }
-//
-//            return manager
-//        }
     }
 
     private val activeWindows = mutableStateListOf(*initialWindows.toTypedArray())
     fun show(window: WindowComponent, config: WindowConfig) {
-        if (activeWindows.none { it.window == window }) {
+        if (activeWindows.none { it.window::class == window::class }) {
             activeWindows.add(ConfiguredWindow(window, config))
         }
     }
 
-    private fun show(windows: List<ConfiguredWindow>) {
-        val activeWindowContents = activeWindows.map { it.window }.toHashSet()
-        activeWindows.addAll(windows.filter { it.window !in activeWindowContents })
-    }
+//    private fun show(windows: List<ConfiguredWindow>) {
+//        val activeWindowContents = activeWindows.map { it.window }.toHashSet()
+//        activeWindows.addAll(windows.filter { it.window !in activeWindowContents })
+//    }
 
     fun hide(window: WindowComponent) {
-        activeWindows.removeIf { it.window == window }
+        hide(window::class)
+    }
+
+    fun <T : WindowComponent> hide(window: KClass<T>) {
+        activeWindows.removeIf { it.window::class == window }
+    }
+    inline fun <reified T : WindowComponent> hide() {
+        hide(T::class)
     }
 
     context(ApplicationScope)
@@ -94,8 +89,6 @@ class WindowManager private constructor(private val initialWindows: List<Configu
             }
             Window(
                 visible = config.visible,
-//                undecorated = config.undecorated,
-//                transparent = config.transparent,
                 transparent = true,
                 undecorated = true,
                 alwaysOnTop = config.alwaysOnTop,
@@ -152,7 +145,7 @@ private fun WithBackground(transparent: Boolean, content: WindowContent) {
 
 val LocalWindowManager = compositionLocalOf<WindowManager> { error("Window Manager not found") }
 
-typealias WindowContent =  @Composable context(BoxScope)() -> Unit
+typealias WindowContent = @Composable context(BoxScope)() -> Unit
 
 
 interface WindowComponent {

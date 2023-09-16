@@ -7,39 +7,51 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.application
-import com.sun.jna.platform.win32.Kernel32
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import util.Countdown
 import util.WindowManager
+import util.downloadImagePainter
+import util.every
 import util.os.Os
-import util.os.User32
-import util.os.User32.LASTINPUTINFO
 import java.awt.GraphicsEnvironment
+import kotlin.math.roundToInt
+import kotlin.math.sqrt
 import kotlin.system.exitProcess
 
 
 class App(private val window: WindowManager) {
-    private val interval = 60 * 30
+    private val breakIntervalSeconds = 60 * 30
     private val idleTime = 60 * 1000L
 
-    private val countdown = Countdown.start(intervalSeconds = interval) {
+    private val countdown: Countdown = Countdown.start(intervalSeconds = breakIntervalSeconds) {
         if (!Os.anyAreRunning(listOf("dota2.exe"))) {
-            StretchReminder.show(window)
+            StretchReminder.show(window, downloadImagePainter("https://zenquotes.io/api/image"))
+            consecutiveBreaksWithoutIdle++
+            updateCountdownInterval()
         }
+    }
+
+    // If the stretch reminder keeps on appearing without the user being idle,
+    // it means he is using the computer consecutively for a long time
+    private var consecutiveBreaksWithoutIdle = 0
+
+    private fun updateCountdownInterval() {
+        // During periods of high use, reduce the interval
+        // See break-interval.png
+        val modifier = (1.0 / 2) + (1 / (2 * sqrt(sqrt(1.0 + consecutiveBreaksWithoutIdle))))
+        countdown.intervalSeconds = (breakIntervalSeconds * modifier).roundToInt()
     }
 
     init {
-        GlobalScope.launch {
-            while (true) {
-                delay(idleTime)
-                if (System.currentTimeMillis() - Os.lastActiveTimeMs() > idleTime) {
-                    countdown.reset()
-                }
+        every(idleTime) {
+            if (isIdle()) {
+                consecutiveBreaksWithoutIdle = 0
+                updateCountdownInterval()
+                countdown.reset()
             }
         }
     }
+
+    private fun isIdle() = System.currentTimeMillis() - Os.lastActiveTimeMs() > idleTime
 
     val secondsTillNextReminder get() = countdown.secondsLeft
 
@@ -98,16 +110,11 @@ fun getTotalScreenWidth(): Int {
 
 //TODO: features:
 
-//TODO: Second Release
-// 1. Many auto-generated inspirational quotes https://zenquotes.io/api/random
-// 2. Decrease break interval in times of high usage
-
 //TODO: Third Release:
-// 2. Config: break interval
+// 2. Config: break interval and formula
 // 3. Config: break duration
 // 4. Config: break sound
 // 5. Config: banned apps
-// 7. config: formula for point 6
 // 8. Config: sound volume
 // 9. Make packaging as MSI work (I think proguard is taking too much stuff)
 
