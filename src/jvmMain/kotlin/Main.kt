@@ -19,11 +19,11 @@ import kotlin.system.exitProcess
 
 
 class App(private val window: WindowManager) {
-    private val breakIntervalSeconds = 60 * 30
+    private val breakIntervalSeconds = 60 * 35
     private val idleTime = 60 * 1000L
 
     private val countdown: Countdown = Countdown.start(intervalSeconds = breakIntervalSeconds) {
-        if (!Os.anyAreRunning(listOf("dota2.exe"))) {
+        if (!Os.anyAreRunning(listOf("dota2.exe", "dontstarve_steam_x64.exe"))) {
             StretchReminder.show(window, downloadImagePainter("https://zenquotes.io/api/image"))
             consecutiveBreaksWithoutIdle++
             updateCountdownInterval()
@@ -40,10 +40,10 @@ class App(private val window: WindowManager) {
         val modifier = (1.0 / 2) + (1 / (2 * sqrt(sqrt(1.0 + consecutiveBreaksWithoutIdle))))
         countdown.intervalSeconds = (breakIntervalSeconds * modifier).roundToInt()
     }
-
     init {
         every(idleTime) {
             if (isIdle()) {
+                println("Resetting")
                 consecutiveBreaksWithoutIdle = 0
                 updateCountdownInterval()
                 countdown.reset()
@@ -51,7 +51,10 @@ class App(private val window: WindowManager) {
         }
     }
 
-    private fun isIdle() = System.currentTimeMillis() - Os.lastActiveTimeMs() > idleTime
+    private fun isIdle(): Boolean {
+        println("Checking idle. Current time: ${System.currentTimeMillis()}, os last active time: ${Os.lastActiveTimeMs()}, diff: ${System.currentTimeMillis() - Os.lastActiveTimeMs()}")
+        return System.currentTimeMillis() - Os.lastActiveTimeMs() > idleTime
+    }
 
     val secondsTillNextReminder get() = countdown.secondsLeft
 
